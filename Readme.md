@@ -1,4 +1,7 @@
 # Navien Water Heater Custom Integration
+
+Fork of [nikshriv/hass_navien_water_heater](https://github.com/nikshriv/hass_navien_water_heater) with the cascade `unitStatusList` IndexError fix from [upstream PR #52](https://github.com/nikshriv/hass_navien_water_heater/pull/52) rebased onto current `main` (keeps error-code sensors).
+
 Control and monitor the state of Navien water heaters which are connected to the Navien cloud portal via a [NaviLink or NaviLink Lite](https://www.navieninc.com/accessories/navilink) control system.
 
 ## Installation
@@ -6,7 +9,7 @@ To install this integration, you can use HACS to perform the installation or you
 
 To install the integration with HACS:
 1. Navigate to HACS and add a custom repository  
-    **URL:** https://github.com/nikshriv/hass_navien_water_heater
+    **URL:** https://github.com/duff/hass_navien_water_heater
     **Category:** Integration
 2. Install module as usual
 3. Restart Home Assistant
