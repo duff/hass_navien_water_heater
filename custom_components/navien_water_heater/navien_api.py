@@ -443,6 +443,22 @@ class NavilinkChannel:
         channel_status["powerStatus"] = channel_status["powerStatus"] == 1
         channel_status["onDemandUseFlag"] = channel_status["onDemandUseFlag"] == 1
         channel_status["avgCalorie"] = channel_status["avgCalorie"]/2.0
+
+        # Cascade: Navien reports unitCount (e.g. 2) but unitStatusList may be shorter.
+        # Iterating range(unitCount) raises IndexError and drops the whole status update.
+        # See https://github.com/nikshriv/hass_navien_water_heater/issues/45 (PR #52).
+        unit_status_list = channel_status.get("unitInfo", {}).get("unitStatusList", [])
+        actual_unit_count = len(unit_status_list)
+        expected_unit_count = channel_status.get("unitCount", 0)
+        safe_unit_count = min(expected_unit_count, actual_unit_count)
+
+        if actual_unit_count < expected_unit_count:
+            _LOGGER.warning(
+                "Channel %s: Expected %d units but received data for %d. "
+                "Cascade units may report delayed status.",
+                self.channel_number, expected_unit_count, actual_unit_count
+            )
+
         if self.channel_info.get("temperatureType",2) == TemperatureType.CELSIUS.value:
             if channel_status["unitType"] in [DeviceSorting.NFC.value,DeviceSorting.NCB_H.value,DeviceSorting.NFB.value,DeviceSorting.NVW.value,]:
                 GIUFactor = 100
@@ -466,8 +482,8 @@ class NavilinkChannel:
             ]:
                 channel_status["DHWSettingTemp"] = round(channel_status["DHWSettingTemp"] / 2.0, 1)
                 channel_status["avgInletTemp"] = round(channel_status["avgInletTemp"] / 2.0, 1)
-                channel_status["avgOutletTemp"] = round(channel_status["avgOutletTemp"] / 2.0, 1)            
-                for i in range(channel_status.get("unitCount",0)):
+                channel_status["avgOutletTemp"] = round(channel_status["avgOutletTemp"] / 2.0, 1)
+                for i in range(safe_unit_count):
                     channel_status["unitInfo"]["unitStatusList"][i]["gasInstantUsage"] = round((channel_status["unitInfo"]["unitStatusList"][i]["gasInstantUsage"] * GIUFactor)/ 10.0, 1)
                     channel_status["unitInfo"]["unitStatusList"][i]["accumulatedGasUsage"] = round(channel_status["unitInfo"]["unitStatusList"][i]["accumulatedGasUsage"] / 10.0, 1)
                     channel_status["unitInfo"]["unitStatusList"][i]["DHWFlowRate"] = round(channel_status["unitInfo"]["unitStatusList"][i]["DHWFlowRate"] / 10.0, 1)
@@ -494,7 +510,7 @@ class NavilinkChannel:
                 DeviceSorting.CAS_NFB.value,
                 DeviceSorting.CAS_NVW.value,
             ]:
-                for i in range(channel_status.get("unitCount",0)):
+                for i in range(safe_unit_count):
                     channel_status["unitInfo"]["unitStatusList"][i]["gasInstantUsage"] = round(channel_status["unitInfo"]["unitStatusList"][i]["gasInstantUsage"] * GIUFactor * 3.968, 1)
                     channel_status["unitInfo"]["unitStatusList"][i]["accumulatedGasUsage"] = round(channel_status["unitInfo"]["unitStatusList"][i]["accumulatedGasUsage"] * 35.314667 / 10.0, 1)
                     channel_status["unitInfo"]["unitStatusList"][i]["DHWFlowRate"] = round(channel_status["unitInfo"]["unitStatusList"][i]["DHWFlowRate"] / 37.85, 1)
